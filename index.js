@@ -17,10 +17,6 @@ const videoGameRoutes = require('./routes/videoGames');
 app.use('/videogames', videoGameRoutes);
 
 
-app.get('/', (req, res) => {
-  res.send('🎮 API de videojuegos funcionando');
-});
-
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor en http://localhost:${PORT}/videogames`);
 });
