@@ -6,7 +6,7 @@ const PORT = 3000;
 
 app.use(express.json());
 
-mongoose.connect('mongodb://localhost:27017/Sales', {
+mongoose.connect('mongodb://localhost:27017/sales', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })

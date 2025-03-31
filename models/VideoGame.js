@@ -12,6 +12,6 @@ const videoGameSchema = new mongoose.Schema({
   JP_Sales: Number,
   Other_Sales: Number,
   Global_Sales: Number
-}, { collection: 'Videogamesales' }); 
+}, { collection: 'videogamesales' }); 
 
 module.exports = mongoose.model('VideoGame', videoGameSchema);
