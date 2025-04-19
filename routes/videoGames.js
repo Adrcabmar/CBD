@@ -414,22 +414,24 @@ router.get('/top-game/genre', async (req, res) => {
 
 
 //Mejores publishers por año y región
-// Ejemplo: http://localhost:3000/videogames/publisher-sales/2006/NA?format=html
-router.get('/publisher-sales/:year/:region', async (req, res) => {
+// Ejemplo: http://localhost:3000/videogames/publisher-sales/2002/EU/10?format=html
+router.get('/publisher-sales/:year/:region/:limit', async (req, res) => {
   const year = parseInt(req.params.year);
   const region = req.params.region.toUpperCase(); // NA, EU, or JP
-  
+  const limit = parseInt(req.params.limit);
+
   // Validar región
   const validRegions = ['NA', 'EU', 'JP'];
   if (!validRegions.includes(region)) {
     return res.status(400).json({ message: 'Región inválida. Usa NA, EU o JP.' });
   }
 
-  // Selecciona región (NA, EU, JP)
-  const regionField = `${region}_Sales`;
+  // Validar límite
+  if (isNaN(limit) || limit <= 0) {
+    return res.status(400).json({ message: 'El límite debe ser un número entero positivo.' });
+  }
 
   try {
-    // Agregamos resultados para obtener ganancias totales por región
     const results = await VideoGame.aggregate([
       {
         $match: {
@@ -438,7 +440,7 @@ router.get('/publisher-sales/:year/:region', async (req, res) => {
       },
       {
         $group: {
-          _id: "$Publisher", // Agrupamos por publisher
+          _id: "$Publisher",
           NA_Sales: { $sum: "$NA_Sales" },
           EU_Sales: { $sum: "$EU_Sales" },
           JP_Sales: { $sum: "$JP_Sales" },
@@ -457,25 +459,25 @@ router.get('/publisher-sales/:year/:region', async (req, res) => {
         }
       },
       {
-        $sort: { Global_Sales: -1 } // Ordenamos por ventas globales
+        $sort: { Global_Sales: -1 }
       },
       {
-        $limit: 5 // Limitado a 5 publishers
+        $limit: limit
       }
     ]);
-
-    // Renderizar html
+    //Renderizar html
     if (req.query.format === 'html') {
       const title = `Top Publishers by ${region} Sales in ${year}`;
       const html = renderPublisher(title, results);
       res.send(html);
     } else {
-      res.json(results); // Devuelve JSON
+      res.json(results);
     }
   } catch (err) {
     res.status(500).json({ message: 'Error al filtrar las ventas de los publishers', error: err });
   }
 });
+
 
 
 
