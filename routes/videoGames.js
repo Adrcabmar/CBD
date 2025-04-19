@@ -14,9 +14,9 @@ const renderTopGameByGenre = require('../utils/renderTopGameByGenre');
 // Get de todo
 router.get('/', async (req, res) => {
   try {
-    const videojuegos = await VideoGame.find().limit(100);
+    const videojuegos = await VideoGame.find();
     if (req.query.format === 'html') {
-      res.send(renderGames('Todos los videojuegos (máx. 100)', videojuegos));
+      res.send(renderGames('Todos los videojuegos)', videojuegos));
     } else {
       res.json(videojuegos);
     }
