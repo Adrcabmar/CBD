@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const VideoGame = require('../models/VideoGame');
 const renderGames = require('../utils/renderGames');
+const renderPercent = require('../utils/renderPercent');
 
 //PARA VER HTML EN EL NAVEGADOR AÑADIR ?format=html A LA URL
 // Ejemplo: http://localhost:3000/videogames?format=html
@@ -151,5 +152,42 @@ router.get('/between/:start/:end', async (req, res) => {
     res.status(500).json({ message: 'Error al filtrar por rango de años', error: err });
   }
 });
+
+//Filtrar por ventas percentuales de Global_sales
+router.get('/percentage/:region/:min/:max', async (req, res) => {
+  const region = req.params.region.toUpperCase(); // NA, EU, or JP
+  const min = parseFloat(req.params.min);
+  const max = parseFloat(req.params.max);
+
+  // Regiones válidas
+  const validRegions = ['NA', 'EU', 'JP'];
+  if (!validRegions.includes(region)) {
+    return res.status(400).json({ message: 'Región inválida. Usa NA, EU o JP.' });
+  }
+  const regionField = `${region}_Sales`;
+  try {
+    const results = await VideoGame.aggregate([
+      {
+        $addFields: {
+          percentage: {
+            $multiply: [
+              { $divide: [`$${regionField}`, "$Global_Sales"] },
+              100
+            ]}}},
+      {
+        $match: {
+          percentage: { $gte: min, $lte: max }
+        }
+      }]);
+    if (req.query.format === 'html') {
+      res.send(renderPercent(`Videojuegos con ventas en ${region} entre ${min}% y ${max}% del total`, results));
+    } else {
+      res.json(results);
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Error al filtrar por porcentaje de región', error: err });
+  }
+});
+
 
 module.exports = router;
