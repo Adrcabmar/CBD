@@ -3,7 +3,8 @@ const router = express.Router();
 const VideoGame = require('../models/VideoGame');
 const renderGames = require('../utils/renderGames');
 const renderPercent = require('../utils/renderPercent');
-const renderSalesPercentage = require('../utils/renderSalesPercentage'); // 👈 nuevo render
+const renderSalesPercentage = require('../utils/renderSalesPercentage');
+const renderPublisher = require('../utils/renderPublisher');
 const renderTopGenreSummary = require('../utils/renderTopGenreSummary');
 const renderTopGameByGenre = require('../utils/renderTopGameByGenre');
 
@@ -203,7 +204,7 @@ router.get('/top/year/:year/:field/:limit', async (req, res) => {
   }
 });
 
-//Filtrar por ventas percentuales de Global_sales
+//Filtrar por ventas percentuales de Global_sales y región
 //http://localhost:3000/videogames/percentage/NA/1/55/?format=html
 router.get('/percentage/:region/:min/:max', async (req, res) => {
   const region = req.params.region.toUpperCase(); // NA, EU, or JP
@@ -408,6 +409,71 @@ router.get('/top-game/genre', async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener el juego más vendido por género', error: err });
+  }
+});
+
+
+//Mejores publishers por año y región
+// Ejemplo: http://localhost:3000/videogames/publisher-sales/2006/NA?format=html
+router.get('/publisher-sales/:year/:region', async (req, res) => {
+  const year = parseInt(req.params.year);
+  const region = req.params.region.toUpperCase(); // NA, EU, or JP
+  
+  // Validar región
+  const validRegions = ['NA', 'EU', 'JP'];
+  if (!validRegions.includes(region)) {
+    return res.status(400).json({ message: 'Región inválida. Usa NA, EU o JP.' });
+  }
+
+  // Selecciona región (NA, EU, JP)
+  const regionField = `${region}_Sales`;
+
+  try {
+    // Agregamos resultados para obtener ganancias totales por región
+    const results = await VideoGame.aggregate([
+      {
+        $match: {
+          Year: year
+        }
+      },
+      {
+        $group: {
+          _id: "$Publisher", // Agrupamos por publisher
+          NA_Sales: { $sum: "$NA_Sales" },
+          EU_Sales: { $sum: "$EU_Sales" },
+          JP_Sales: { $sum: "$JP_Sales" },
+          Other_Sales: { $sum: "$Other_Sales" },
+          Global_Sales: { $sum: "$Global_Sales" }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          NA_Sales: { $round: ["$NA_Sales", 2] },
+          EU_Sales: { $round: ["$EU_Sales", 2] },
+          JP_Sales: { $round: ["$JP_Sales", 2] },
+          Other_Sales: { $round: ["$Other_Sales", 2] },
+          Global_Sales: { $round: ["$Global_Sales", 2] }
+        }
+      },
+      {
+        $sort: { Global_Sales: -1 } // Ordenamos por ventas globales
+      },
+      {
+        $limit: 5 // Limitado a 5 publishers
+      }
+    ]);
+
+    // Renderizar html
+    if (req.query.format === 'html') {
+      const title = `Top Publishers by ${region} Sales in ${year}`;
+      const html = renderPublisher(title, results);
+      res.send(html);
+    } else {
+      res.json(results); // Devuelve JSON
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Error al filtrar las ventas de los publishers', error: err });
   }
 });
 
