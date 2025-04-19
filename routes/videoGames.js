@@ -154,6 +154,7 @@ router.get('/between/:start/:end', async (req, res) => {
 });
 
 //Filtrar por ventas percentuales de Global_sales
+//http://localhost:3000/videogames/percentage/NA/1/55/?format=html
 router.get('/percentage/:region/:min/:max', async (req, res) => {
   const region = req.params.region.toUpperCase(); // NA, EU, or JP
   const min = parseFloat(req.params.min);
