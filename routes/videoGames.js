@@ -7,6 +7,8 @@ const renderSalesPercentage = require('../utils/renderSalesPercentage');
 const renderPublisher = require('../utils/renderPublisher');
 const renderTopGenreSummary = require('../utils/renderTopGenreSummary');
 const renderTopGameByGenre = require('../utils/renderTopGameByGenre');
+const renderSalesByPublisher = require('../utils/renderSalesByPublisher');
+
 
 //PARA VER HTML EN EL NAVEGADOR AÑADIR ?format=html A LA URL
 // Ejemplo: http://localhost:3000/videogames?format=html
@@ -475,6 +477,115 @@ router.get('/publisher-sales/:year/:region/:limit', async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ message: 'Error al filtrar las ventas de los publishers', error: err });
+  }
+});
+
+// Obtener ventas por publisher
+// Ejemplo: http://localhost:3000/videogames/sales-by-publisher?format=html
+router.get('/sales-by-publisher', async (req, res) => {
+  try {
+    const allGames = await VideoGame.find();
+    const salesByPublisher = {};
+
+    allGames.forEach(game => {
+      const publisher = game.Publisher;
+      if (!publisher) return;
+
+      if (!salesByPublisher[publisher]) {
+        salesByPublisher[publisher] = {
+          NA_Sales: 0,
+          EU_Sales: 0,
+          JP_Sales: 0,
+          Other_Sales: 0,
+          Global_Sales: 0
+        };
+      }
+
+      salesByPublisher[publisher].NA_Sales += game.NA_Sales || 0;
+      salesByPublisher[publisher].EU_Sales += game.EU_Sales || 0;
+      salesByPublisher[publisher].JP_Sales += game.JP_Sales || 0;
+      salesByPublisher[publisher].Other_Sales += game.Other_Sales || 0;
+      salesByPublisher[publisher].Global_Sales += game.Global_Sales || 0;
+    });
+
+    const result = Object.entries(salesByPublisher).map(([publisher, sales]) => ({
+      Publisher: publisher,
+      NA_Sales: sales.NA_Sales.toFixed(2),
+      EU_Sales: sales.EU_Sales.toFixed(2),
+      JP_Sales: sales.JP_Sales.toFixed(2),
+      Other_Sales: sales.Other_Sales.toFixed(2),
+      Global_Sales: sales.Global_Sales.toFixed(2)
+    })).sort((a, b) => b.Global_Sales - a.Global_Sales);
+
+    if (req.query.format === 'html') {
+      res.send(renderSalesByPublisher('Ventas por Publisher', result));
+    } else {
+      res.json(result);
+    }
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error al calcular ventas por publisher', error: err });
+  }
+});
+
+// Obtener ventas por publisher entre dos años
+// Ejemplo: http://localhost:3000/videogames/sales/publisher/between/2000/2010?format=html
+router.get('/sales/publisher/between/:start/:end', async (req, res) => {
+  const start = parseInt(req.params.start);
+  const end = parseInt(req.params.end);
+
+  try {
+    const allGames = await VideoGame.find({
+      Year: { $gte: start, $lte: end }
+    });
+
+    const salesByPublisher = {};
+
+    allGames.forEach(game => {
+      const { Publisher } = game;
+      if (!Publisher) return;
+
+      if (!salesByPublisher[Publisher]) {
+        salesByPublisher[Publisher] = {
+          NA_Sales: 0,
+          EU_Sales: 0,
+          JP_Sales: 0,
+          Other_Sales: 0,
+          Global_Sales: 0
+        };
+      }
+
+      salesByPublisher[Publisher].NA_Sales += game.NA_Sales || 0;
+      salesByPublisher[Publisher].EU_Sales += game.EU_Sales || 0;
+      salesByPublisher[Publisher].JP_Sales += game.JP_Sales || 0;
+      salesByPublisher[Publisher].Other_Sales += game.Other_Sales || 0;
+      salesByPublisher[Publisher].Global_Sales += game.Global_Sales || 0;
+    });
+
+    const results = Object.entries(salesByPublisher).map(([publisher, sales]) => ({
+      Publisher: publisher,
+      NA_Sales: sales.NA_Sales.toFixed(2),
+      EU_Sales: sales.EU_Sales.toFixed(2),
+      JP_Sales: sales.JP_Sales.toFixed(2),
+      Other_Sales: sales.Other_Sales.toFixed(2),
+      Global_Sales: sales.Global_Sales.toFixed(2)
+    }));
+
+    results.sort((a, b) => b.Global_Sales - a.Global_Sales);
+
+    if (req.query.format === 'html') {
+      res.send(
+        renderSalesByPublisher(`Ventas por publisher entre ${start} y ${end}`, results)
+      );
+    } else {
+      res.json(results);
+    }
+
+  } catch (err) {
+    res.status(500).json({
+      message: 'Error al obtener ventas por publisher en rango de años',
+      error: err
+    });
   }
 });
 
