@@ -4,6 +4,8 @@ const VideoGame = require('../models/VideoGame');
 const renderGames = require('../utils/renderGames');
 const renderPercent = require('../utils/renderPercent');
 const renderSalesPercentage = require('../utils/renderSalesPercentage'); // 👈 nuevo render
+const renderTopGenreSummary = require('../utils/renderTopGenreSummary');
+const renderTopGameByGenre = require('../utils/renderTopGameByGenre');
 
 //PARA VER HTML EN EL NAVEGADOR AÑADIR ?format=html A LA URL
 // Ejemplo: http://localhost:3000/videogames?format=html
@@ -290,6 +292,125 @@ router.get('/sales-percentage', async (req, res) => {
     res.status(500).json({ message: 'Error al calcular los porcentajes de ventas', error: err });
   }
 });
+
+// Obtener el género más vendido por año y región
+// Ejemplo: http://localhost:3000/videogames/top-genre/year/region/NA_Sales?format=html
+router.get('/top-genre/year/region/:region', async (req, res) => {
+  const region = req.params.region;
+  const allowedFields = ['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales'];
+
+  if (!allowedFields.includes(region)) {
+    return res.status(400).json({ message: `Región no válida. Usa: ${allowedFields.join(', ')}` });
+  }
+
+  try {
+    const allGames = await VideoGame.find();
+    const salesByYearGenre = {};
+
+    allGames.forEach(game => {
+      const { Year, Genre } = game;
+      const sales = game[region] || 0;
+      if (!Year || !Genre) return;
+
+      if (!salesByYearGenre[Year]) salesByYearGenre[Year] = {};
+      if (!salesByYearGenre[Year][Genre]) salesByYearGenre[Year][Genre] = 0;
+
+      salesByYearGenre[Year][Genre] += sales;
+    });
+
+    const topGenres = Object.entries(salesByYearGenre).map(([year, genres]) => {
+      const top = Object.entries(genres).sort((a, b) => b[1] - a[1])[0];
+      return {
+        Year: parseInt(year),
+        Genre: top[0],
+        Sales: top[1].toFixed(2)
+      };
+    }).sort((a, b) => a.Year - b.Year);
+
+    if (req.query.format === 'html') {
+      res.send(renderTopGenreSummary(`Top género por año en ${region}`, topGenres, ['Year', 'Genre', 'Sales']));
+    } else {
+      res.json(topGenres);
+    }
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener el género más vendido por año y región', error: err });
+  }
+});
+
+// Obtener el género más vendido por plataforma
+// Ejemplo: http://localhost:3000/videogames/top-genre/platform?format=html
+router.get('/top-genre/platform', async (req, res) => {
+  try {
+    const allGames = await VideoGame.find();
+    const salesByPlatformGenre = {};
+
+    allGames.forEach(game => {
+      const { Platform, Genre, Global_Sales } = game;
+      if (!Platform || !Genre) return;
+
+      if (!salesByPlatformGenre[Platform]) salesByPlatformGenre[Platform] = {};
+      if (!salesByPlatformGenre[Platform][Genre]) salesByPlatformGenre[Platform][Genre] = 0;
+
+      salesByPlatformGenre[Platform][Genre] += Global_Sales || 0;
+    });
+
+    const topGenres = Object.entries(salesByPlatformGenre).map(([platform, genres]) => {
+      const top = Object.entries(genres).sort((a, b) => b[1] - a[1])[0];
+      return {
+        Platform: platform,
+        Genre: top[0],
+        Global_Sales: top[1].toFixed(2)
+      };
+    });
+
+    if (req.query.format === 'html') {
+      res.send(renderTopGenreSummary(`Top género por plataforma`, topGenres, ['Platform', 'Genre', 'Global_Sales']));
+    } else {
+      res.json(topGenres);
+    }
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener el género más vendido por plataforma', error: err });
+  }
+});
+
+// Obtener el juego más vendido por género
+// Ejemplo: http://localhost:3000/videogames/top-game/genre?format=html
+router.get('/top-game/genre', async (req, res) => {
+  try {
+    const allGames = await VideoGame.find();
+    const topByGenre = {};
+
+    allGames.forEach(game => {
+      const { Genre, Global_Sales } = game;
+      if (!Genre) return;
+
+      if (!topByGenre[Genre] || (Global_Sales > topByGenre[Genre].Global_Sales)) {
+        topByGenre[Genre] = game;
+      }
+    });
+
+    const result = Object.entries(topByGenre).map(([genre, game]) => ({
+      Genre: genre,
+      Name: game.Name,
+      Platform: game.Platform,
+      Year: game.Year,
+      Publisher: game.Publisher,
+      Global_Sales: game.Global_Sales.toFixed(2)
+    }));
+
+    if (req.query.format === 'html') {
+      res.send(renderTopGameByGenre('Top juego por género', result));
+    } else {
+      res.json(result);
+    }
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener el juego más vendido por género', error: err });
+  }
+});
+
 
 
 
