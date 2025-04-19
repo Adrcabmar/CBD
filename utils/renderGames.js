@@ -1,13 +1,21 @@
-module.exports = function renderGames(title, juegos) {
+module.exports = function renderGames(title, juegos, salesField = 'Global_Sales') {
+    const salesTitleMap = {
+      'NA_Sales': 'Norteamérica',
+      'EU_Sales': 'Europa',
+      'JP_Sales': 'Japón',
+      'Other_Sales': 'Otros',
+      'Global_Sales': 'Global'
+    };
+  
     let html = `
       <html>
         <head>
           <title>${title}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
-            th { background-color: #f0f0f0; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
           </style>
         </head>
         <body>
@@ -20,19 +28,20 @@ module.exports = function renderGames(title, juegos) {
               <th>Year</th>
               <th>Genre</th>
               <th>Publisher</th>
-              <th>Global Sales</th>
+              <th>Ventas (${salesTitleMap[salesField] || salesField})</th>
             </tr>`;
   
     juegos.forEach(j => {
-      html += `<tr>
-        <td>${j.Rank}</td>
-        <td>${j.Name}</td>
-        <td>${j.Platform}</td>
-        <td>${j.Year}</td>
-        <td>${j.Genre}</td>
-        <td>${j.Publisher}</td>
-        <td>${j.Global_Sales}</td>
-      </tr>`;
+      html += `
+        <tr>
+          <td>${j.Rank}</td>
+          <td>${j.Name}</td>
+          <td>${j.Platform}</td>
+          <td>${j.Year}</td>
+          <td>${j.Genre}</td>
+          <td>${j.Publisher}</td>
+          <td>${j[salesField]}</td>
+        </tr>`;
     });
   
     html += `</table></body></html>`;

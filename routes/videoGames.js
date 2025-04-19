@@ -153,6 +153,53 @@ router.get('/between/:start/:end', async (req, res) => {
   }
 });
 
+// Top X de un año según tipo de venta
+// Ejemplo: http://localhost:3000/videogames/top/year/2005/NA_Sales/5?format=html
+router.get('/top/year/:year/:field/:limit', async (req, res) => {
+  const year = parseInt(req.params.year);
+  const field = req.params.field;
+  const limit = parseInt(req.params.limit);
+  let mssg = ""
+  switch (field) {
+    case 'NA_Sales':
+      mssg = " ventas en Norteamérica"
+      break;
+    case 'EU_Sales':
+      mssg = "ventas en Europa"
+      break;
+    case 'JP_Sales':
+      mssg = "ventas en Japón"
+      break;
+    case 'Other_Sales':
+      mssg = "ventas en otros paises"
+      break;
+    case 'Global_Sales':
+      mssg = "ventas globales"
+      break;
+    default:
+      mssg = "Campo no válido"
+      break;
+  }
+  const allowedFields = ['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales', 'Global_Sales'];
+  if (!allowedFields.includes(field)) {
+    return res.status(400).json({ message: `Campo no válido. Usa uno de: ${allowedFields.join(', ')}` });
+  }
+
+  try {
+    const results = await VideoGame.find({ Year: year })
+      .sort({ [field]: -1 })
+      .limit(limit);
+
+    if (req.query.format === 'html') {
+      res.send(renderGames(`Top ${limit} de ${year} ordenado por ${mssg}`, results, field));
+    } else {
+      res.json(results);
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener el top de ventas por año y campo', error: err });
+  }
+});
+
 //Filtrar por ventas percentuales de Global_sales
 //http://localhost:3000/videogames/percentage/NA/1/55/?format=html
 router.get('/percentage/:region/:min/:max', async (req, res) => {
