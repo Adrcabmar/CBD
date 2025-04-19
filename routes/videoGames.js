@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
 });
 
 // Buscar por nombre
+// Ejemplo: http://localhost:3000/videogames/search?name=Mario&format=html
 router.get('/search', async (req, res) => {
   const name = req.query.name;
   const results = await VideoGame.find({ Name: { $regex: name, $options: 'i' } });
@@ -32,6 +33,7 @@ router.get('/search', async (req, res) => {
 });
 
 // Filtrar por género
+// Ejemplo: http://localhost:3000/videogames/genre/Sports?format=html
 router.get('/genre/:genre', async (req, res) => {
   const results = await VideoGame.find({ Genre: req.params.genre });
   if (req.query.format === 'html') {
@@ -42,6 +44,7 @@ router.get('/genre/:genre', async (req, res) => {
 });
 
 // Top X ventas
+// Ejemplo: http://localhost:3000/videogames/top/10?format=html
 router.get('/top/:limit', async (req, res) => {
   const limit = parseInt(req.params.limit);
   const results = await VideoGame.find().sort({ Global_Sales: -1 }).limit(limit);
@@ -53,6 +56,7 @@ router.get('/top/:limit', async (req, res) => {
 });
 
 // Filtrar por plataforma
+// Ejemplo: http://localhost:3000/videogames/platform/PS4?format=html
 router.get('/platform/:platform', async (req, res) => {
   try {
     const results = await VideoGame.find({ Platform: req.params.platform });
@@ -67,6 +71,7 @@ router.get('/platform/:platform', async (req, res) => {
 });
 
 // Filtrar por publisher
+// Ejemplo: http://localhost:3000/videogames/publisher/Nintendo?format=html
 router.get('/publisher/:publisher', async (req, res) => {
   try {
     const results = await VideoGame.find({ Publisher: req.params.publisher });
@@ -81,6 +86,7 @@ router.get('/publisher/:publisher', async (req, res) => {
 });
 
 // Filtrar por año (después de)
+// Ejemplo: http://localhost:3000/videogames/after/2000?format=html
 router.get('/after/:year', async (req, res) => {
   const year = parseInt(req.params.year);
   try {
@@ -96,6 +102,7 @@ router.get('/after/:year', async (req, res) => {
 });
 
 // Filtrar por año (antes de)
+// Ejemplo: http://localhost:3000/videogames/before/2000?format=html
 router.get('/before/:year', async (req, res) => {
   const year = parseInt(req.params.year);
   try {
@@ -111,6 +118,7 @@ router.get('/before/:year', async (req, res) => {
 });
 
 // Filtrar por juegos de un año
+// Ejemplo: http://localhost:3000/videogames/year/2000?format=html
 router.get('/year/:year', async (req, res) => {
   const year = parseInt(req.params.year);
   try {
@@ -126,6 +134,7 @@ router.get('/year/:year', async (req, res) => {
 });
 
 // Filtrar por juegos entre dos años
+// Ejemplo: http://localhost:3000/videogames/between/2000/2010?format=html
 router.get('/between/:start/:end', async (req, res) => {
   const start = parseInt(req.params.start);
   const end = parseInt(req.params.end);
