@@ -3,6 +3,7 @@ const router = express.Router();
 const VideoGame = require('../models/VideoGame');
 const renderGames = require('../utils/renderGames');
 const renderPercent = require('../utils/renderPercent');
+const renderSalesPercentage = require('../utils/renderSalesPercentage'); // 👈 nuevo render
 
 //PARA VER HTML EN EL NAVEGADOR AÑADIR ?format=html A LA URL
 // Ejemplo: http://localhost:3000/videogames?format=html
@@ -236,6 +237,60 @@ router.get('/percentage/:region/:min/:max', async (req, res) => {
     res.status(500).json({ message: 'Error al filtrar por porcentaje de región', error: err });
   }
 });
+
+//Porcetanje de ventas por región y año
+// Ejemplo: http://localhost:3000/videogames/sales-percentage?format=html
+router.get('/sales-percentage', async (req, res) => {
+  try {
+    // Obtener todos los videojuegos agrupados por año
+    const allGames = await VideoGame.find();
+
+    const salesByYear = {};
+
+    // Agrupar ventas por año
+    allGames.forEach(game => {
+      const year = game.Year;
+      if (!year) return;
+
+      if (!salesByYear[year]) {
+        salesByYear[year] = {
+          NA_Sales: 0,
+          EU_Sales: 0,
+          JP_Sales: 0,
+          Other_Sales: 0,
+          Total: 0
+        };
+      }
+
+      salesByYear[year].NA_Sales += game.NA_Sales || 0;
+      salesByYear[year].EU_Sales += game.EU_Sales || 0;
+      salesByYear[year].JP_Sales += game.JP_Sales || 0;
+      salesByYear[year].Other_Sales += game.Other_Sales || 0;
+    });
+
+    // Calcular porcentajes
+    const percentages = Object.entries(salesByYear).map(([year, sales]) => {
+      const total = sales.NA_Sales + sales.EU_Sales + sales.JP_Sales + sales.Other_Sales;
+      return {
+        Year: parseInt(year),
+        NA: ((sales.NA_Sales / total) * 100).toFixed(2),
+        EU: ((sales.EU_Sales / total) * 100).toFixed(2),
+        JP: ((sales.JP_Sales / total) * 100).toFixed(2),
+        Other: ((sales.Other_Sales / total) * 100).toFixed(2),
+      };
+    }).sort((a, b) => a.Year - b.Year);
+
+    if (req.query.format === 'html') {
+      res.send(renderSalesPercentage('Porcentaje de ventas por región y año', percentages));
+    } else {
+      res.json(percentages);
+    }
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error al calcular los porcentajes de ventas', error: err });
+  }
+});
+
 
 
 module.exports = router;
