@@ -3,6 +3,9 @@ const router = express.Router();
 const VideoGame = require('../models/VideoGame');
 const renderGames = require('../utils/renderGames');
 
+//PARA VER HTML EN EL NAVEGADOR AÑADIR ?format=html A LA URL
+// Ejemplo: http://localhost:3000/videogames?format=html
+
 // Get de todo
 router.get('/', async (req, res) => {
   try {
